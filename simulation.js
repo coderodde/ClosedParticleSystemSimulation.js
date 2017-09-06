@@ -79,7 +79,7 @@ Particle.prototype.getForce = function(otherParticle) {
     var distance = this.getDistance(otherParticle);
     var mass1 = this.getMass();
     var mass2 = otherParticle.getMass();
-    return Configuration.FORCE_CONSTANT * mass1 * mass2 / (distance * distnace);
+    return Configuration.FORCE_CONSTANT * mass1 * mass2 / (distance * distance);
 };
 
 Particle.prototype.getForceVector = function(otherParticle) {
@@ -134,7 +134,7 @@ Vector.prototype.getY = function() {
 };
 
 Vector.prototype.plus = function(other) {
-    return new Vector(x + other.x, y + other.y);
+    return new Vector(this.x + other.x, this.y + other.y);
 };
 
 Vector.prototype.multiply = function(factor) {
@@ -156,6 +156,7 @@ function getPotentialEnergy(particle1, particle2) {
 }
 
 function SimulationEngine(canvasContext, 
+                          canvasElement,
                           particles,
                           renderers,
                           timeStep,
@@ -163,6 +164,7 @@ function SimulationEngine(canvasContext,
                           worldHeight,
                           sleepTime) {
     this.canvasContext            = canvasContext;
+    this.canvasElement            = canvasElement;
     this.particles                = particles;
     this.renderers                = renderers;
     this.timeStep                 = timeStep;
@@ -214,8 +216,11 @@ SimulationEngine.prototype.performStep = function() {
 };
 
 SimulationEngine.prototype.redraw = function() {
-    canvasContext.fillStle = "#0ff";
-    canvasContext.fillRect(0, 0, canvasElement.width, canvasElement.height);
+    this.canvasContext.fillStyle = "#000";
+    this.canvasContext.fillRect(0, 
+                                0, 
+                                this.canvasElement.width, 
+                                this.canvasElement.height);
     
     for (var i = 0; i < this.renderers.length; ++i) {
         var renderer = this.renderers[i];
@@ -224,6 +229,8 @@ SimulationEngine.prototype.redraw = function() {
 };
 
 SimulationEngine.prototype.computeForceVectors = function() {
+    this.particleToForceVectorMap = [];
+    
     for (var i = 0; i < this.particles.length; ++i) {
         var particle = this.particles[i];
         var vector = new Vector(0.0, 0.0);
@@ -239,19 +246,18 @@ SimulationEngine.prototype.computeForceVectors = function() {
             vector = vector.plus(aux);
         }
         
-        this.particleToForceVectorMap[particle] = vector;
+        this.particleToForceVectorMap.push([particle, vector]);
     }
 };
 
 SimulationEngine.prototype.updateParticleVelocities = function() {
-    for (var key in this.particleToForceVectorMap) {
-        if (this.particleToForceVectorMap.hasOwnProperty(key)) {
-            var particle = key;
-            var vector = this.particleToForceVectorMap[key];
-            vector = vector.multiply(1.0 / particle.getMass());
-            particle.setVelocityX(particle.getVelocityX() + vector.getX() * this.timeStep);
-            particle.setVelocityY(particle.getVelocityY() + vector.getY() * this.timeStep);
-        }
+    for (var i = 0; i < this.particleToForceVectorMap.length; ++i) {
+        var particle = this.particleToForceVectorMap[i][0];
+        var vector   = this.particleToForceVectorMap[i][1];
+            
+        vector = vector.multiply(1.0 / particle.getMass());
+        particle.setVelocityX(particle.getVelocityX() + vector.getX() * this.timeStep);
+        particle.setVelocityY(particle.getVelocityY() + vector.getY() * this.timeStep);
     }
 };
 
@@ -286,7 +292,7 @@ SimulationEngine.prototype.normalizeVelocityVectors = function() {
     var factor = this.getNormalizationFactor(totalEnergyDelta);
     
     for (var i = 0; i < this.particles.length; ++i) {
-        var particle = this.particles.length;
+        var particle = this.particles[i];
         particle.setVelocityX(factor * particle.getVelocityX());
         particle.setVelocityY(factor * particle.getVelocityY());
     }
@@ -419,6 +425,7 @@ function main() {
     var renderers = extractRenderers(particleData);
     
     var simulationEngine = new SimulationEngine(canvasContext,
+                                                canvasElement,
                                                 particles,
                                                 renderers,
                                                 Configuration.TIME_STEP,
