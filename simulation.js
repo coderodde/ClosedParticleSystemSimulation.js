@@ -214,20 +214,24 @@ SimulationEngine.prototype.performStep = function() {
 };
 
 SimulationEngine.prototype.redraw = function() {
-    canvasContext.fillStle = "#000";
+    canvasContext.fillStle = "#0ff";
     canvasContext.fillRect(0, 0, canvasElement.width, canvasElement.height);
     
-    for (var renderer in this.renderers) {
+    for (var i = 0; i < this.renderers.length; ++i) {
+        var renderer = this.renderers[i];
         renderer.draw();
     }
 };
 
 SimulationEngine.prototype.computeForceVectors = function() {
-    for (var particle in this.particles) {
+    for (var i = 0; i < this.particles.length; ++i) {
+        var particle = this.particles[i];
         var vector = new Vector(0.0, 0.0);
         
-        for (var otherParticle in this.particles) {
-            if (particle === otherParticle) {
+        for (var j = 0; j < this.particles.length; ++j) {
+            var otherParticle = this.particles[j];
+            
+            if (i === j) {
                 continue;
             }
             
@@ -252,14 +256,17 @@ SimulationEngine.prototype.updateParticleVelocities = function() {
 };
 
 SimulationEngine.prototype.moveParticles = function() {
-    for (var particle in this.particles) {
+    for (var i = 0; i < this.particles.length; ++i) {
+        var particle = this.particles[i];
         particle.setX(particle.getX() + particle.getVelocityX() * this.timeStep);
         particle.setY(particle.getY() + particle.getVelocityY() * this.timeStep);
     }
 };
 
 SimulationEngine.prototype.resolveWorldBorderCollisions = function() {
-    for (var particle in this.particles) {
+    for (var i = 0; i < this.particles.length; ++i) {
+        var particle = this.particles[i];
+        
         if (particle.getY() - particle.getRadius() <= 0.0) {
             particle.setVelocityY(-particle.getVelocityY());
         } else if (particle.getY() + particle.getRadius() >= this.worldHeight) {
@@ -278,7 +285,8 @@ SimulationEngine.prototype.normalizeVelocityVectors = function() {
     var totalEnergyDelta = this.computeTotalEnergyDelta();
     var factor = this.getNormalizationFactor(totalEnergyDelta);
     
-    for (var particle in this.particles) {
+    for (var i = 0; i < this.particles.length; ++i) {
+        var particle = this.particles.length;
         particle.setVelocityX(factor * particle.getVelocityX());
         particle.setVelocityY(factor * particle.getVelocityY());
     }
@@ -296,8 +304,8 @@ SimulationEngine.prototype.getNormalizationFactor = function(totalEnergyDelta) {
 
 SimulationEngine.prototype.computeTotalKineticEnergy = function() {
     var energy = 0.0;
-    
-    for (var particle in this.particles) {
+    for (var i = 0; i < this.particles.length; ++i) {
+        var particle = this.particles[i];
         energy += particle.getKineticEnergy();
     }
     
@@ -397,11 +405,6 @@ function main() {
     var canvasElement = document.getElementById("cnvs");
     setCanvasDimensions(canvasElement);
     var canvasContext = canvasElement.getContext("2d");
-    var p = new Particle(1.0, 20);
-    p.setX(50.0);
-    p.setY(50.0);
-    var pRep = new ParticleRenderer(p, "#f00", canvasContext);
-    pRep.draw();
     
     var worldWidth  = canvasElement.width  / Configuration.PIXELS_PER_UNIT_LENGTH;
     var worldHeight = canvasElement.height / Configuration.PIXELS_PER_UNIT_LENGTH;
@@ -422,8 +425,8 @@ function main() {
                                                 worldWidth,
                                                 worldHeight,
                                                 Configuration.SLEEP_TIME);
-    simulationEngine.run();
     simulationEngine.togglePause();
+    simulationEngine.run();
 }
 
 main();
