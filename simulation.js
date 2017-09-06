@@ -1,12 +1,12 @@
 var Configuration = {
     PIXELS_PER_UNIT_LENGTH: 10.0,
-    FORCE_CONSTANT: 1000.0,
+    FORCE_CONSTANT: 500.0,
     SLEEP_TIME: 10,
     TIME_STEP: 0.01,
     MINIMUM_PARTICLE_MASS: 10.0,
     MAXIMUM_PARTICLE_MASS: 30.0,
     MAXIMUM_INITIAL_VELOCITY: 40.0,
-    DEFAULT_NUMBER_OF_PARTICLES: 3
+    DEFAULT_NUMBER_OF_PARTICLES: 10
 };
 
 function Particle(mass, radius) {
@@ -215,6 +215,12 @@ SimulationEngine.prototype.redraw = function() {
         var renderer = this.renderers[i];
         renderer.draw();
     }
+    
+    this.canvasContext.fillStyle = "#fff";
+    this.font = "20px Arial";
+    this.canvasContext.fillText("Total energy: " + this.computeTotalEnergy(), 
+                                0, 
+                                30);
 };
 
 SimulationEngine.prototype.computeForceVectors = function() {
@@ -422,8 +428,10 @@ function main() {
                                                 worldWidth,
                                                 worldHeight,
                                                 Configuration.SLEEP_TIME);
-    window.onkeydown = function() {
-        simulationEngine.togglePause();
+    window.onkeydown = function(e) {
+        if (e.keyCode === 32) {
+            simulationEngine.togglePause();
+        }
     };                               
     
     simulationEngine.run();
