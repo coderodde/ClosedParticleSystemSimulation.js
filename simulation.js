@@ -182,29 +182,17 @@ SimulationEngine.prototype.togglePause = function() {
 };
 
 SimulationEngine.prototype.run = function() {
+    this.redraw();
     this.totalEnergy = this.computeTotalEnergy();
+    var self = this;
     
-    setInterval((function(self){ 
+    setInterval(function() {
         if (!self.pause) {
             self.performStep();
             self.redraw();
         }
-        
-        console.log("yeah");
-    })(this), 
-    this.sleepTime);
+    }, this.sleepTime);
 };
-
-/*
-
-SimulationEngine.prototype.runImpl = function() {
-    if (!this.pause) {
-        this.performStep();
-        this.redraw();
-    }
-    
-    console.log("Pause: " + this.pause);
-};*/
 
 SimulationEngine.prototype.performStep = function() {
     this.computeForceVectors();
@@ -432,7 +420,10 @@ function main() {
                                                 worldWidth,
                                                 worldHeight,
                                                 Configuration.SLEEP_TIME);
-    simulationEngine.togglePause();
+    window.onkeydown = function() {
+        simulationEngine.togglePause();
+    }                                  
+    
     simulationEngine.run();
 }
 
