@@ -75,29 +75,29 @@ Particle.prototype.getRadius = function() {
     return this.radius;
 };
 
-Particle.prototype.getForce = function(otherParticle) {
-    var distance = this.getDistance(otherParticle);
-    var mass1 = this.getMass();
-    var mass2 = otherParticle.getMass();
+function getForce(particle1, particle2) {
+    var distance = particle1.getDistance(particle2);
+    var mass1 = particle1.getMass();
+    var mass2 = particle2.getMass();
     return Configuration.FORCE_CONSTANT * mass1 * mass2 / (distance * distance);
-};
+}
 
-Particle.prototype.getForceVector = function(otherParticle) {
-    var vectorLength = this.getForce(otherParticle);
-    var dx = this.getX() - otherParticle.getX();
-    var dy = this.getY() - otherParticle.getY();
+function getForceVector(particle1, particle2) {
+    var vectorLength = getForce(particle1, particle2);
+    var dx = particle1.getX() - particle2.getX();
+    var dy = particle1.getY() - particle2.getY();
     var angle = Math.atan2(dy, dx);
     var xComponent = vectorLength * Math.cos(angle);
     var yComponent = vectorLength * Math.sin(angle);
     return new Vector(xComponent, yComponent);
-};
+}
 
-Particle.prototype.getPotentialEnergy = function(otherParticle) {
-    var mass1 = this.getMass();
-    var mass2 = otherParticle.getMass();
-    var distance = this.getDistance(otherParticle);
+function getPotentialEnergy(particle1, particle2) {
+    var mass1 = particle1.getMass();
+    var mass2 = particle2.getMass();
+    var distance = particle1.getDistance(particle2);
     return Configuration.FORCE_CONSTANT * mass1 * mass2 / distance;
-};
+}
 
 function ParticleRenderer(particle, color, canvasContext) {
     this.particle = particle;
@@ -113,7 +113,8 @@ ParticleRenderer.prototype.draw = function() {
     this.canvasContext.beginPath();
     this.canvasContext.arc(effectiveX, 
                            effectiveY, 
-                           this.particle.getRadius(), 
+                           this.particle.getRadius() * 
+                                   Configuration.PIXELS_PER_UNIT_LENGTH, 
                            0, 
                            2 * Math.PI, 
                            false);
@@ -230,7 +231,7 @@ SimulationEngine.prototype.computeForceVectors = function() {
                 continue;
             }
             
-            var aux = particle.getForceVector(otherParticle);
+            var aux = getForceVector(particle, otherParticle);
             vector = vector.plus(aux);
         }
         
@@ -260,16 +261,17 @@ SimulationEngine.prototype.moveParticles = function() {
 SimulationEngine.prototype.resolveWorldBorderCollisions = function() {
     for (var i = 0; i < this.particles.length; ++i) {
         var particle = this.particles[i];
+        var radius = particle.getRadius();
         
-        if (particle.getY() - particle.getRadius() <= 0.0) {
+        if (particle.getY() - radius <= 0.0) {
             particle.setVelocityY(-particle.getVelocityY());
-        } else if (particle.getY() + particle.getRadius() >= this.worldHeight) {
+        } else if (particle.getY() + radius >= this.worldHeight) {
             particle.setVelocityY(-particle.getVelocityY());
         }
         
-        if (particle.getX() - particle.getRadius() <= 0.0) {
+        if (particle.getX() - radius <= 0.0) {
             particle.setVelocityX(-particle.getVelocityX());
-        } else if (particle.getX() + particle.getRadius() >= this.worldWidth) {
+        } else if (particle.getX() + radius >= this.worldWidth) {
             particle.setVelocityX(-particle.getVelocityX());
         }
     }
@@ -322,7 +324,7 @@ SimulationEngine.prototype.computeTotalEnergy = function() {
         
         for (var j = i + 1; j < this.particles.length; ++j) {
             var particle2 = this.particles[j];
-            totalEnergy += particle1.getPotentialEnergy(particle2);
+            totalEnergy += getPotentialEnergy(particle1, particle2);
         }
     }
     
@@ -364,7 +366,7 @@ function createRandomParticleData(worldWidth, worldHeight, canvasContext) {
     var mass = Configuration.MINIMUM_PARTICLE_MASS + 
               (Configuration.MAXIMUM_PARTICLE_MASS - Configuration.MINIMUM_PARTICLE_MASS) 
              * Math.random();
-    var radius = mass;
+    var radius = mass / Configuration.PIXELS_PER_UNIT_LENGTH;
     var particle = new Particle(mass, radius);
     particle.setX(worldWidth * Math.random());
     particle.setY(worldHeight * Math.random());
@@ -422,7 +424,7 @@ function main() {
                                                 Configuration.SLEEP_TIME);
     window.onkeydown = function() {
         simulationEngine.togglePause();
-    }                                  
+    };                               
     
     simulationEngine.run();
 }
